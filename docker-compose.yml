@@ -1,0 +1,107 @@
+version: "3"
+
+services:
+  php:
+    build: .docker/php
+    container_name: "apache-srv"
+    image: server-apache
+    volumes:
+      - app-volumen:/usr/share/logstash/logstash
+      - .docker/apache/decorilla.test+4.pem:/etc/ssl/certs/decorilla.test+4.pem
+      - .docker/apache/decorilla.test+4-key.pem:/etc/ssl/private/decorilla.test+4-key.pem
+      - .docker/apache/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
+      - .docker/connectors:/home/connector/
+      - ./src:/var/www/html
+    ports:
+      - 80:80
+      - 443:443
+    restart: on-failure
+    networks:
+      - mynetwork
+
+  mysql:
+    image: mysql:5.7.33
+    container_name: "mysql-srv"
+    volumes:
+      - .docker/db:/var/lib/mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    restart: always
+    networks:
+      - mynetwork
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: "phpmyadmin-srv"
+    ports:
+      - 8080:80
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=root
+    links:
+      - mysql
+    restart: always
+    networks:
+      - mynetwork
+  
+  elasticsearch:
+    image: elasticsearch:6.8.14
+    container_name: "elasticsearch-srv"
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - ./esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - mynetwork
+
+  kibana:
+    container_name: kibana-srv
+    image: docker.elastic.co/kibana/kibana:6.8.14
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - mynetwork
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash-oss:7.12.0
+    user: root
+    container_name: "logstash-srv"
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - app-volumen:/usr/share/logstash/logstash
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/logs/:/var/log/GDPR/myapplication:ro
+    ports:
+      - "5000:5000/tcp"
+      - "5044:5044"
+      - "5000:5000/udp"
+      - "9600:9600"
+    depends_on:
+      - elasticsearch
+    networks:
+      - mynetwork
+
+
+volumes:
+  app-volumen:
+
+networks:
+  mynetwork:
+    driver: bridge

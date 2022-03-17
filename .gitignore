@@ -1,0 +1,7 @@
+
+.docker/apache/decorilla.test+4.pem
+.docker/apache/decorilla.test+4-key.pem
+.docker/db/*
+esdata/*
+./logstash/logs
+src/
