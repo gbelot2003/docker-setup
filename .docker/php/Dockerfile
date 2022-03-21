@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libpq-dev \
   libfreetype6-dev \
   libjpeg62-turbo-dev \
-  libpng-dev
+  libpng-dev \
+  wget
+  
 
 RUN docker-php-ext-configure gd \
   --with-png-dir=/usr/include/ \
@@ -34,6 +36,12 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 # Clear package lists
 RUN apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+
+#ADD https://artifacts.elastic.co/downloads/logstash/logstash-7.12.0-linux-x86_64.tar.gz /usr/share/
+
+#COPY logstash-7.12.0 /usr/share
+
+#RUN tar -C /usr/share/ -xvf /usr/share/logstash-7.12.0-linux-x86_64.tar.gz 
 
 # Permissions
 RUN chown -R root:www-data /var/www/html

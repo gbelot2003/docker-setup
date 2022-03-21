@@ -6,7 +6,7 @@ services:
     container_name: "apache-srv"
     image: server-apache
     volumes:
-      - app-volumen:/usr/share/logstash/logstash
+      - ./logstash:/usr/share/logstash-7.12.0:rw
       - .docker/apache/decorilla.test+4.pem:/etc/ssl/certs/decorilla.test+4.pem
       - .docker/apache/decorilla.test+4-key.pem:/etc/ssl/private/decorilla.test+4-key.pem
       - .docker/apache/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
@@ -16,6 +16,10 @@ services:
       - 80:80
       - 443:443
     restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 6G
     networks:
       - mynetwork
 
@@ -58,9 +62,10 @@ services:
       - "discovery.type=single-node"
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
     volumes:
       - ./esdata:/usr/share/elasticsearch/data
+      - .docker/connectors:/home/connector/
     ports:
       - "9200:9200"
     networks:
@@ -77,26 +82,6 @@ services:
       - elasticsearch
     ports:
       - 5601:5601
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash-oss:7.12.0
-    user: root
-    container_name: "logstash-srv"
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - app-volumen:/usr/share/logstash/logstash
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
-      - ./logstash/logs/:/var/log/GDPR/myapplication:ro
-    ports:
-      - "5000:5000/tcp"
-      - "5044:5044"
-      - "5000:5000/udp"
-      - "9600:9600"
-    depends_on:
-      - elasticsearch
-    networks:
-      - mynetwork
 
 
 volumes:

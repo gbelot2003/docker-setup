@@ -1,0 +1,28 @@
+#!/usr/binº bash
+# Parameters for Logstash:
+# Source: Database Server
+export jdbc_connection_string="jdbc:mysql://mysql:3306/decorella?useSSL=true&user=root&password=root&sessionVariables=group_concat_max_len=99999999&sessionVariables=group_concat_max_len=99999999,sort_buffer_size=1048576";
+export jdbc_user="root";
+export jdbc_password="root";
+export jdbc_driver_library="/home/connector/mysql-connector-java-8.0.28/mysql-connector-java-8.0.28.jar";
+export jdbc_driver_class="com.mysql.cj.jdbc.Driver";
+# Destination: Elastic Search server
+export elasticsearch_hosts="elasticsearch:9200";
+export collection_index="decorilla-collection";
+export vendors_index="decorilla-vendors";
+export colours_index="decorilla-colours";
+export artstyles_index="decorilla-artstyles";
+export brands_index="decorilla-brands";
+# Start the script!
+#echo "$(date) Disabling the Decorilla Collection..."
+#/var/www/html/protected/yiic disabledc;
+#echo "$(date) Executing daily importers..."
+#/var/www/html/protected/yiic dailyimporters --verbose=1;
+#echo "$(date) Updating Elastic Search collection index settings..."
+#curl -X PUT "elasticsearch:9200/decorilla-collection/_settings?pretty" -H 'Content-Type: application/json' -d' { "index" : { "refresh_interval" : "30s", "number_of_replicas" : "0", "blocks.read_only_allow_delete" : "false" } }';
+echo "$(date) Creating Elastic Search brands index..."
+/usr/share/logstash-7.12.0/bin/logstash -f /var/www/html/protected/config/logstash/decorilla-brands.conf --log.level=error --path.data=/home/connector/logs/decorilla-brands$(date +%Y%m%d_%H%M%S);
+/var/www/html/protected/yiic slackimportersmessage --logstashIndex=decorilla-brands;
+#echo "$(date) Enabling the Decorilla Collection..."
+#/var/www/html/protected/yiic enabledc;
+#rm -rf /home/luke/*decorilla*;
